@@ -236,8 +236,7 @@ mISDN_sock_sendmsg(struct socket *sock, struct msghdr *msg, size_t len)
 	}
 
 done:
-	if (skb)
-		kfree_skb(skb);
+	kfree_skb(skb);
 	release_sock(sk);
 	return err;
 }
@@ -588,7 +587,7 @@ static const struct proto_ops data_sock_ops = {
 	.getname	= data_sock_getname,
 	.sendmsg	= mISDN_sock_sendmsg,
 	.recvmsg	= mISDN_sock_recvmsg,
-	.poll_mask	= datagram_poll_mask,
+	.poll		= datagram_poll,
 	.listen		= sock_no_listen,
 	.shutdown	= sock_no_shutdown,
 	.setsockopt	= data_sock_setsockopt,

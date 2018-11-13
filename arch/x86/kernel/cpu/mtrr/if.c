@@ -106,7 +106,8 @@ mtrr_write(struct file *file, const char __user *buf, size_t len, loff_t * ppos)
 
 	memset(line, 0, LINE_SIZE);
 
-	length = strncpy_from_user(line, buf, LINE_SIZE - 1);
+	len = min_t(size_t, len, LINE_SIZE - 1);
+	length = strncpy_from_user(line, buf, len);
 	if (length < 0)
 		return length;
 
@@ -173,12 +174,12 @@ mtrr_ioctl(struct file *file, unsigned int cmd, unsigned long __arg)
 	case MTRRIOC_SET_PAGE_ENTRY:
 	case MTRRIOC_DEL_PAGE_ENTRY:
 	case MTRRIOC_KILL_PAGE_ENTRY:
-		if (copy_from_user(&sentry, arg, sizeof sentry))
+		if (copy_from_user(&sentry, arg, sizeof(sentry)))
 			return -EFAULT;
 		break;
 	case MTRRIOC_GET_ENTRY:
 	case MTRRIOC_GET_PAGE_ENTRY:
-		if (copy_from_user(&gentry, arg, sizeof gentry))
+		if (copy_from_user(&gentry, arg, sizeof(gentry)))
 			return -EFAULT;
 		break;
 #ifdef CONFIG_COMPAT
@@ -331,7 +332,7 @@ mtrr_ioctl(struct file *file, unsigned int cmd, unsigned long __arg)
 	switch (cmd) {
 	case MTRRIOC_GET_ENTRY:
 	case MTRRIOC_GET_PAGE_ENTRY:
-		if (copy_to_user(arg, &gentry, sizeof gentry))
+		if (copy_to_user(arg, &gentry, sizeof(gentry)))
 			err = -EFAULT;
 		break;
 #ifdef CONFIG_COMPAT

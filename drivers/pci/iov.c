@@ -13,7 +13,6 @@
 #include <linux/export.h>
 #include <linux/string.h>
 #include <linux/delay.h>
-#include <linux/pci-ats.h>
 #include "pci.h"
 
 #define VIRTFN_ID_LEN	16
@@ -133,6 +132,8 @@ static void pci_read_vf_config_common(struct pci_dev *virtfn)
 			     &physfn->sriov->subsystem_vendor);
 	pci_read_config_word(virtfn, PCI_SUBSYSTEM_ID,
 			     &physfn->sriov->subsystem_device);
+
+	physfn->sriov->cfg_size = pci_cfg_space_size(virtfn);
 }
 
 int pci_iov_add_virtfn(struct pci_dev *dev, int id)
@@ -575,6 +576,22 @@ void pci_iov_release(struct pci_dev *dev)
 }
 
 /**
+ * pci_iov_remove - clean up SR-IOV state after PF driver is detached
+ * @dev: the PCI device
+ */
+void pci_iov_remove(struct pci_dev *dev)
+{
+	struct pci_sriov *iov = dev->sriov;
+
+	if (!dev->is_physfn)
+		return;
+
+	iov->driver_max_VFs = iov->total_VFs;
+	if (iov->num_VFs)
+		pci_warn(dev, "driver left SR-IOV enabled after remove\n");
+}
+
+/**
  * pci_iov_update_resource - update a VF BAR
  * @dev: the PCI device
  * @resno: the resource number
@@ -802,15 +819,15 @@ int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs)
 {
 	if (!dev->is_physfn)
 		return -ENOSYS;
+
 	if (numvfs > dev->sriov->total_VFs)
 		return -EINVAL;
 
 	/* Shouldn't change if VFs already enabled */
 	if (dev->sriov->ctrl & PCI_SRIOV_CTRL_VFE)
 		return -EBUSY;
-	else
-		dev->sriov->driver_max_VFs = numvfs;
 
+	dev->sriov->driver_max_VFs = numvfs;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(pci_sriov_set_totalvfs);

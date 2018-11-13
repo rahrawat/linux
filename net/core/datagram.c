@@ -808,8 +808,9 @@ int skb_copy_and_csum_datagram_msg(struct sk_buff *skb,
 			return -EINVAL;
 		}
 
-		if (unlikely(skb->ip_summed == CHECKSUM_COMPLETE))
-			netdev_rx_csum_fault(skb->dev);
+		if (unlikely(skb->ip_summed == CHECKSUM_COMPLETE) &&
+		    !skb->csum_complete_sw)
+			netdev_rx_csum_fault(NULL);
 	}
 	return 0;
 fault:
@@ -819,8 +820,9 @@ EXPORT_SYMBOL(skb_copy_and_csum_datagram_msg);
 
 /**
  * 	datagram_poll - generic datagram poll
+ *	@file: file struct
  *	@sock: socket
- *	@events to wait for
+ *	@wait: poll table
  *
  *	Datagram poll: Again totally generic. This also handles
  *	sequenced packet sockets providing the socket receive queue
@@ -830,10 +832,14 @@ EXPORT_SYMBOL(skb_copy_and_csum_datagram_msg);
  *	and you use a different write policy from sock_writeable()
  *	then please supply your own write_space callback.
  */
-__poll_t datagram_poll_mask(struct socket *sock, __poll_t events)
+__poll_t datagram_poll(struct file *file, struct socket *sock,
+			   poll_table *wait)
 {
 	struct sock *sk = sock->sk;
-	__poll_t mask = 0;
+	__poll_t mask;
+
+	sock_poll_wait(file, sock, wait);
+	mask = 0;
 
 	/* exceptional events? */
 	if (sk->sk_err || !skb_queue_empty(&sk->sk_error_queue))
@@ -866,4 +872,4 @@ __poll_t datagram_poll_mask(struct socket *sock, __poll_t events)
 
 	return mask;
 }
-EXPORT_SYMBOL(datagram_poll_mask);
+EXPORT_SYMBOL(datagram_poll);

@@ -134,7 +134,7 @@ static void update_defense_level(struct netns_ipvs *ipvs)
 		} else {
 			atomic_set(&ipvs->dropentry, 0);
 			ipvs->sysctl_drop_entry = 1;
-		};
+		}
 		break;
 	case 3:
 		atomic_set(&ipvs->dropentry, 1);
@@ -3234,7 +3234,7 @@ static int ip_vs_genl_dump_dests(struct sk_buff *skb,
 
 	/* Try to find the service for which to dump destinations */
 	if (nlmsg_parse(cb->nlh, GENL_HDRLEN, attrs, IPVS_CMD_ATTR_MAX,
-			ip_vs_cmd_policy, NULL))
+			ip_vs_cmd_policy, cb->extack))
 		goto out_err;
 
 
